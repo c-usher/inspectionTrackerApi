@@ -1,0 +1,36 @@
+service: inspection-track-api
+
+frameworkVersion: "2"
+
+provider:
+  name: aws
+  region: us-west-1
+  runtime: nodejs12.x
+  lambdaHashingVersion: 20201221
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:*
+      Resource: "*"
+functions:
+  app:
+    handler: handler.app
+    events:
+      - http: ANY /{proxy+}
+      # /\ makes any path ok can be post,put,delete,get,patch whatever
+resources:
+  Resources:
+    usersTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: inspectionTrackTable
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+
