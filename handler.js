@@ -1,17 +1,18 @@
 const serverless = require("serverless-http");
 const express = require("express");
 const app = express();
-// const bodyParser = require("body-parser");
+const bodyParser = require("body-parser");
 const AWS = require("aws-sdk");
 const db = new AWS.DynamoDB.DocumentClient();
 const { v4: uuidv4 } = require("uuid");
 
-app.use(express.urlencoded());
-// app.use(bodyParser.urlencoded({ extended: true }));
-// app.unsubscribe(bodyParser.json());
+// app.use(express.urlencoded());
+// app.use(express.json());
+app.use(bodyParser.urlencoded({ extended: true }));
+app.unsubscribe(bodyParser.json());
 
 app.post("/inspections", async (req, res) => {
-  const data = req.apiGateway.event.body;
+  const data = req.body;
   const params = {
     TableName: "inspectionTrackTable",
     Item: {
@@ -21,14 +22,13 @@ app.post("/inspections", async (req, res) => {
       managed: data.managed,
       rental: data.rental,
       inHouse: data.inHouse,
-      robCount: data.robeCount,
+      robeCount: data.robeCount,
       inspected: data.inspected,
-      notes: data.notes,
+      notes: data.notes
     },
   };
-
   try {
-    await db.put(params).promise(); //<promise is need for async functions
+    await db.put(params).promise();
     res.status(201).json({ unit: params.Item });
   } catch (e) {
     res.status(500).json({ error: e.message });
@@ -48,20 +48,12 @@ app.get("/inspections/:id", async (req, res) => {
   const data = req.apiGateway.event.body;
   const params = {
     TableName: "inspectionTrackTable",
-    Item: {
-      id: data.id,
-      unitNum: data.unitNum,
-      building: data.building,
-      managed: data.managed,
-      rental: data.rental,
-      inHouse: data.inHouse,
-      robCount: data.robeCount,
-      inspected: data.inspected,
-      notes: data.notes,
+    Key: {
+      id: req.params.id,
     },
   };
-     await db.scan(params).promise();
-    res.status(200).json({ unit: params.Item });
+     const result = await db.get(params).promise();
+    res.status(200).json({ unitInfo: result });
 })
 
 app.patch("/inspections/:id", async (req, res) => {
@@ -81,7 +73,7 @@ app.patch("/inspections/:id", async (req, res) => {
     },
   };
   await db.put(params).promise();
-  res.status(200).json({ unit: params.Item });
+  res.status(200).json({ unitInfo: params.Item });
 });
 
 app.delete("/inspections/:id", async (req, res) => {
